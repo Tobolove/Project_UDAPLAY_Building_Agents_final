@@ -21,7 +21,32 @@ class LLM:
     ):
         self.model = model
         self.temperature = temperature
-        self.client = OpenAI(api_key=api_key) if api_key else OpenAI()
+        
+        # Handle Vocareum API keys (from Udacity) vs regular OpenAI API keys
+        if api_key:
+            if api_key.startswith("voc-"):
+                # Vocareum API key - route through Vocareum servers
+                self.client = OpenAI(
+                    base_url="https://openai.vocareum.com/v1",
+                    api_key=api_key
+                )
+            else:
+                # Regular OpenAI API key
+                self.client = OpenAI(api_key=api_key)
+        else:
+            # No API key provided, try to get from environment
+            import os
+            env_api_key = os.getenv("OPENAI_API_KEY")
+            if env_api_key and env_api_key.startswith("voc-"):
+                # Vocareum API key from environment
+                self.client = OpenAI(
+                    base_url="https://openai.vocareum.com/v1",
+                    api_key=env_api_key
+                )
+            else:
+                # Regular OpenAI API key or default
+                self.client = OpenAI()
+        
         self.tools: Dict[str, Tool] = {
             tool.name: tool for tool in (tools or [])
         }
